@@ -24,4 +24,9 @@ jobs:
     - {name: install, run: lein deps}
     - {name: test, run: lein test}
     - {name: build, run: lein jar, if: github.ref == 'master'}
-    - {name: deploy, run: lein release :patch, if: github.ref == 'master'}
+    - name: deploy
+      env:
+        CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
+        CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+      run: lein deploy clojars
+      if: github.ref == 'master'
