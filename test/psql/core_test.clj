@@ -3,6 +3,7 @@
             [psql.core :as sut]))
 
 (def conn {:host (or (System/getenv "POSTGRES_HOST") "localhost")
+           :port (or (System/getenv "POSTGRES_PORT") 5432)
            :username (or (System/getenv "POSTGRES_USER") "postgres")
            :password (or (System/getenv "POSTGRES_PASSWORD") "")
            :name (or (System/getenv "POSTGRES_DATABASE") "postgres")})
