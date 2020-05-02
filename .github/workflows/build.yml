@@ -12,8 +12,11 @@ jobs:
     services:
       postgres:
         image: postgres
+        ports:
+          - 5432:5432
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: 'douglass'
+          POSTGRES_PASSWORD: 'password'
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -22,7 +25,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - {name: install, run: lein deps}
-    - {name: test, run: lein test}
+    - name: test
+      run: lein test
+      env:
+        POSTGRES_USER: douglass
+        POSTGRES_PASSWORD: password
     # Deploy manually for a time
     # - name: deploy
     #   env:
