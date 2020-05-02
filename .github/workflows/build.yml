@@ -12,6 +12,8 @@ jobs:
     services:
       postgres:
         image: postgres
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: 'douglass'
           POSTGRES_PASSWORD: 'password'
@@ -26,7 +28,6 @@ jobs:
     - name: test
       run: lein test
       env:
-        POSTGRES_HOST: postgres
         POSTGRES_USER: douglass
         POSTGRES_PASSWORD: password
     # Deploy manually for a time
