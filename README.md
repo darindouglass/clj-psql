@@ -68,7 +68,7 @@ user> (psql/insert! conn :grades [{:name "Bobby Tables" :subject "English" :grad
 
 ### `query`
 #### Simple form
-Runs the provided `SELECT` statement and parses the data into a vector of maps:
+Runs the provided `SELECT` statement and parses the data into a sequence of maps:
 
 ```clojure
 user> (psql/query conn "select name, subject from grades where grade = 100")
