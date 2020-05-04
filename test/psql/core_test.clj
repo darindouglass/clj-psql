@@ -31,7 +31,11 @@
   (testing "we can query the database"
     (is (empty? (sut/query conn :grades {}))))
   (testing "inserts work propery"
-    (is (= 4 (count (sut/insert! conn :grades grades))))
+    (is (= 3 (count (sut/insert! conn :grades (butlast grades)))))
+    (testing "vector commands"
+      (let [{:keys [name subject grade]} (last grades)]
+        (is (= 1 (sut/insert! conn ["insert into grades (name, subject, grade) values (?, ?, ?)"
+                                    name subject grade])))))
     (is (= 2 (count (sut/query conn :grades {:name "Bobby"}))))
     (is (= 2 (count (sut/query conn :grades {:name "Suzy"})))))
   (testing "updates work"
@@ -41,7 +45,14 @@
                       (sut/query conn :grades)
                       (first)
                       (:grade)
-                      (Integer/parseInt))))))
+                      (Integer/parseInt))))
+      (testing "vector commands"
+        (sut/update! conn ["update grades set grade = ? where name = ?" 99 "Suzy"])
+        (is (= 99 (->> condition
+                       (sut/query conn :grades)
+                       (first)
+                       (:grade)
+                       (Integer/parseInt)))))))
   (testing "multi-updates work"
     (let [conditions [{:name "Suzy" :subject "Math"}
                       {:name "Bobby" :subject "English"}]]
@@ -50,7 +61,10 @@
   (testing "deletes work"
     (let [condition {:comment "has tutor"}]
       (sut/delete! conn :grades condition)
-      (is (empty? (sut/query conn :grades condition)))))
+      (is (empty? (sut/query conn :grades condition))))
+    (testing "vector commands"
+      (sut/delete! conn ["delete from grades where name = ? and subject = ?" "Bobby" "Math"])
+      (is (empty? (sut/query conn :grades {:name "Bobby" :subject "Math"})))))
   (testing "multi-deletes work"
     (let [conditions [{:name "Suzy" :subject "English"}
                       {:name "Suzy" :subject "Math"}]]

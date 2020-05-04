@@ -55,6 +55,11 @@
                               (map #(format "(%s)" %1))
                               (str/join " or "))))))
 
+(defn- vector->command
+  "Takes a jdbc-style vector query and converts it into a plain string query."
+  [[command & params]]
+  (apply format (str/replace command #"\?" "%s") (map format-value params)))
+
 (defn- rows
   "Splits a chunk of psql output into individual rows."
   [line]
@@ -93,8 +98,10 @@
 
 (defn query
   "Runs a SELECT against psql and processes its output."
-  ([conn query]
-   (output->data (execute! conn query)))
+  ([conn command]
+   (if (vector? command)
+     (query conn (vector->command command))
+     (output->data (execute! conn command))))
   ([conn table conditions]
    (query conn (format "select * from %s %s"
                        (snake_case table)
@@ -105,15 +112,17 @@
 
   Returns the inserted rows on successful insert."
   ([conn query]
-   (let [result (->> query
-                     (execute! conn)
-                     (str/trim)
-                     (re-matches #"INSERT \d+ (\d+)")
-                     (last)
-                     (Integer/parseInt))]
-     (if (pos? result)
-       result
-       nil)))
+   (if (vector? query)
+     (insert! conn (vector->command query))
+     (let [result (->> query
+                       (execute! conn)
+                       (str/trim)
+                       (re-matches #"INSERT \d+ (\d+)")
+                       (last)
+                       (Integer/parseInt))]
+       (if (pos? result)
+         result
+         nil))))
   ([conn table data]
    (let [data (boxed data)
          columns (sort (keys (first data)))
@@ -129,15 +138,17 @@
 (defn delete!
   "Runs a DELETE against psql and processes its output."
   ([conn query]
-   (let [result (->> query
-                     (execute! conn)
-                     (str/trim)
-                     (re-matches #"DELETE (\d+)")
-                     (last)
-                     (Integer/parseInt))]
-     (if (pos? result)
-       result
-       nil)))
+   (if (vector? query)
+     (delete! conn (vector->command query))
+     (let [result (->> query
+                       (execute! conn)
+                       (str/trim)
+                       (re-matches #"DELETE (\d+)")
+                       (last)
+                       (Integer/parseInt))]
+       (if (pos? result)
+         result
+         nil))))
   ([conn table conditions]
    (delete! conn (format "delete from %s %s"
                          (snake_case table)
@@ -148,7 +159,9 @@
 
   Returns the updated rows on succesful update."
   ([conn query]
-   (let [result (->> query
+   (if (vector? query)
+     (update! conn (vector->command query))
+     (let [result (->> query
                      (execute! conn)
                      (str/trim)
                      (re-matches #"UPDATE (\d+)")
@@ -156,7 +169,7 @@
                      (Integer/parseInt))]
      (if (pos? result)
        result
-       nil)))
+       nil))))
   ([conn table updates conditions]
    (when (update! conn (format "update %s set %s %s"
                                (snake_case table)
