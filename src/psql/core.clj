@@ -85,13 +85,14 @@
   "Runs the provided command using psql."
   [conn command]
   (let [{:keys [host port name username password] :or {port 5432}} conn
-        {:keys [out err]} (shell/sh "psql"
-                                    "-h" host
-                                    "-U" username
-                                    "-p" (str port)
-                                    name
-                                    :in command
-                                    :env (assoc (into {} (System/getenv)) "PGPASSWORD" password))]
+        env  (merge (into {} (System/getenv))
+                    (when host {"PGHOST" host})
+                    (when port {"PGPORT" (str port)})
+                    (when username {"PGUSER" username})
+                    (when password {"PGPASSWORD" password})
+                    (when name {"PGDATABASE" name}))
+        {:keys [out err]} (shell/sh "psql" "--no-psqlrc"
+                                    :in command :env env)]
     (when-not (str/blank? err)
       (throw (ex-info err {:conn conn :command command})))
     out))
